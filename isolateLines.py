@@ -23,21 +23,23 @@ def cropToLine(img, l, bufferSize=0):
 
 minv = 15
 maxv = 105
-
+color = cv2.imread('numLine.jpeg',1)
 img = cv2.imread('numLine.jpeg',0 )
 edges = cv2.Canny(img,minv,maxv)
-
 linesP = cv2.HoughLinesP(edges, 1, np.pi / 180, 50, None, 500, 40)
-
-print(linesP)
-
-
 cdstP = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
 
+#make a list to store the crops
+allCrops = []
+
+
+#cut the image up into crops based on where the hough lines are
 for i in range(0, len(linesP)):
     l = linesP[i][0]
     cv2.line(cdstP, (l[0], l[1]), (l[2], l[3]), (0,0,255), 3, cv2.LINE_AA)
-    cv2.imshow("reoriented" + str(i), cropToLine(img, l,10))
+    crop = cropToLine(color, l,10)
+    allCrops.append(crop)
+    cv2.imshow("reoriented" + str(i), crop)
 
 cv2.imshow("original", cdstP)
 
