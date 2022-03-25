@@ -7,10 +7,13 @@ from skimage.draw import line
 NOF_MARKERS = 60
 
 # Show input image
-img = cv2.imread("sample.jpg")
+img = cv2.imread("exampleNumberLine.jpeg",1)
+cv2.imshow("image",img)
+cv2.waitKey(0)
 img_orig = img.copy()
 img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 fig, axs = plt.subplots(2, 2)
+
 
 # Detect long lines in the image
 img_edg = cv2.Canny(img, 50, 120)
@@ -23,9 +26,10 @@ lines = cv2.HoughLinesP(
     rho=1,
     theta=np.pi / 360,
     threshold=70,
-    minLineLength=300,
-    maxLineGap=15,
+    minLineLength=600,
+    maxLineGap=40,
 )
+print(lines)
 lines = lines.squeeze()
 for x1, y1, x2, y2 in lines:
     cv2.line(img_edg, (x1, y1), (x2, y2), (255, 0, 0))
@@ -33,7 +37,7 @@ axs[0, 0].imshow(img_edg, aspect="auto")
 
 
 def optimize_line_alignment(img_gray, line_end_points):
-    # Shift endpoints to find optimal alignment with black line in the  origial image
+    # Shift endpoints to find optimal alignment with black line in the origial image
     opt_line_mean = 255
     x1, y1, x2, y2 = line_end_points
     for dx1 in range(-3, 4):
@@ -69,6 +73,9 @@ cv2.line(img, (line1[0], line1[1]), (line1[2], line1[3]), (255, 0, 0))
 cv2.line(img, (line2[0], line2[1]), (line2[2], line2[3]), (255, 0, 0))
 axs[0, 1].set_title("Edges of the strip")
 axs[0, 1].imshow(img, aspect="auto")
+
+
+print(line1)
 
 # Take region of interest from image
 dx = round(0.5 * (line2[0] - line1[0]) + 0.5 * (line2[2] - line1[2]))
@@ -109,7 +116,9 @@ extra_ax.vlines(
     colors="green",
     linestyles="dotted",
 )
+print(line1_discrete[peaks,0])
 axs[1, 1].set_title("Midpoints between markings")
 axs[1, 1].imshow(img_orig, aspect="auto")
 axs[1, 1].plot(line1_discrete[peaks, 0], line1_discrete[peaks, 1], "r+")
 fig.show()
+
