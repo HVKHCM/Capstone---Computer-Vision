@@ -73,6 +73,9 @@ def align(line1, line2):
     
 
 def regionBetween(line1, line2, img):
+    height = img.shape[0]
+    width = img.shape[1]
+    
     dx = int(0.5 * (line2[0] - line1[0]) + 0.5 * (line2[2] - line1[2]))
     dy = int(0.5 * (line2[1] - line1[1]) + 0.5 * (line2[3] - line1[3]))
     
@@ -89,6 +92,14 @@ def regionBetween(line1, line2, img):
             perpendicular_line_discrete[:, 1], perpendicular_line_discrete[:, 0]
         ]
     return img_roi
+
+def normalizeGaps(peaks):
+    gaps = np.subtract(peaks[1:], peaks[:-1])
+    med = np.median(gaps)
+    mean = np.mean(gaps)
+    print(gaps)
+    print(med)
+    print(mean)
 
 def lineLen(line):
     return np.sqrt((line[0]-line[2])**2 + (line[1]-line[3])**2)
@@ -125,7 +136,7 @@ def parallelism(a,b):
     return prod/lineLen(a)/lineLen(b) 
 
 pic = cv2.imread("numLine.jpeg")
-
+pic = cv2.resize(pic,(0,0), fx =  1.2, fy = 1.2)
 # Create a VideoCapture object and read from input file
 # If the input is the camera, pass 0 instead of the video file name
 cap = cv2.VideoCapture('numLineData/IMG_1706.MOV')
@@ -138,6 +149,8 @@ if (cap.isOpened()):
 display = img.copy()
 
 def process(img):
+    #KNOWN BUGS: rulerRegion sometimes tries to access pixels which are out of range. 
+    
     #First, repeat canny alg until there are about [candidates] or so candidate lines. 
     width = img.shape[1]
     maxVal = 1000
@@ -226,6 +239,8 @@ def process(img):
         roi_mean = np.insert(roi_mean, 0, 0)
         peaks, _ = find_peaks(roi_mean[:black_bar], distance=length / NOF_MARKERS * 0.75)
         peaks = peaks - 1
+    
+    normalizeGaps(peaks)
     
     
     #finally, display marks on the ruler. 
