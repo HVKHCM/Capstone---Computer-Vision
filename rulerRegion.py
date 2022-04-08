@@ -1,4 +1,5 @@
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import find_peaks
 from skimage.draw import line
@@ -63,31 +64,31 @@ def align(line1, line2):
                 end2 = candidates2[j]
                 fard = d
                 
+    if blockDist(start1, start2) > blockDist(start1, end2):
+        temp = start2
+        start2 = end2
+        end2 = temp            
+    
     return [start1[0], start1[1], end1[0], end1[1]] , [start2[0], start2[1], end2[0], end2[1]]
     
 
-def optimize_line_alignment(img_gray, line_end_points):
-    # Shift endpoints to find optimal alignment with black line in the origial image
-    opt_line_mean = 255
-    x1, y1, x2, y2 = line_end_points
-    for dx1 in range(-3, 4):
-        for dy1 in range(-3, 4):
-            for dx2 in range(-3, 4):
-                for dy2 in range(-3, 4):
-                    line_discrete = np.asarray(
-                        list(zip(*line(*(x1 + dx1, y1 + dy1), *(x2 + dx2, y2 + dy2))))
-                    )
-                    line_pixel_values = img_gray[
-                        line_discrete[:, 1], line_discrete[:, 0]
-                    ]
-                    line_mean = np.mean(line_pixel_values)
-                    if line_mean < opt_line_mean:
-                        opt_line_end_points = np.array(
-                            [x1 + dx1, y1 + dy1, x2 + dx2, y2 + dy2]
-                        )
-                        opt_line_discrete = line_discrete
-                        opt_line_mean = line_mean
-    return opt_line_end_points, opt_line_discrete
+def regionBetween(line1, line2, img):
+    dx = int(0.5 * (line2[0] - line1[0]) + 0.5 * (line2[2] - line1[2]))
+    dy = int(0.5 * (line2[1] - line1[1]) + 0.5 * (line2[3] - line1[3]))
+    
+    img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    
+    strip_width = len(list(zip(*line(*(0, 0), *(dx, dy)))))
+    line1_discrete = discretize(line1)
+    img_roi = np.zeros((strip_width, line1_discrete.shape[0]), dtype=np.uint8)
+    for idx, (x, y) in enumerate(line1_discrete):
+        perpendicular_line_discrete = np.asarray(
+            list(zip(*line(*(x, y), *(x + dx, y + dy))))
+        )
+        img_roi[:, idx] = img_gray[
+            perpendicular_line_discrete[:, 1], perpendicular_line_discrete[:, 0]
+        ]
+    return img_roi
 
 def lineLen(line):
     return np.sqrt((line[0]-line[2])**2 + (line[1]-line[3])**2)
@@ -96,6 +97,7 @@ def midPoint(l):
     return [(l[0]+l[2])/2, (l[1]+l[3])/2]
 
 def mb(l):
+    #gives slope and y intercept
     return ((l[1]-l[3])/(l[0]-l[2]), -l[0]* (l[1]-l[3])/(l[0]-l[2]) + l[1]) 
 
 def ab(l):
@@ -122,13 +124,11 @@ def parallelism(a,b):
     prod = abs(np.dot(va,vb))
     return prod/lineLen(a)/lineLen(b) 
 
-a = [0,2,10,2]
-b = [10,4,15,4]
-#print(align(a,b))
+pic = cv2.imread("numLine.jpeg")
 
 # Create a VideoCapture object and read from input file
 # If the input is the camera, pass 0 instead of the video file name
-cap = cv2.VideoCapture('numLineData/IMG_1704.MOV')
+cap = cv2.VideoCapture('numLineData/IMG_1706.MOV')
 # Check if camera opened successfully
 if (cap.isOpened()):
     ret, img = cap.read()
@@ -138,11 +138,11 @@ if (cap.isOpened()):
 display = img.copy()
 
 def process(img):
-    #First, repeat canny alg until there are about 20 or so candidate lines. 
+    #First, repeat canny alg until there are about [candidates] or so candidate lines. 
     width = img.shape[1]
     maxVal = 1000
     minVal = 700
-    
+    NOF_MARKERS = 100
     candidates = 10
     while True:
         edges = cv2.Canny(img, minVal, maxVal)
@@ -155,7 +155,7 @@ def process(img):
         maxVal = int(maxVal)
         minVal = int(minVal)
     
-    #So we found a good few lines, concatenate to less than 10
+    #So we found a good few lines, concatenate to less than [candidates]
     lines = lines[:candidates]
     lines = lines.squeeze()
     
@@ -192,27 +192,56 @@ def process(img):
     display = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
     for l in lines:
         cv2.line(display, (l[0], l[1]), (l[2], l[3]), (0,0,255), 3, cv2.LINE_AA)
-        
-    #print(best)
     
     for l in best:
         cv2.line(display, (l[0], l[1]), (l[2], l[3]), (255,0,0), 3, cv2.LINE_AA)
     
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    display = img.copy()
+    
     
     veryBest = align(veryBest[0], veryBest[1])
     for l in veryBest:
         cv2.line(display, (l[0], l[1]), (l[2], l[3]), (0,255,0), 3, cv2.LINE_AA)
-        #l, newlinedisc = optimize_line_alignment(img_gray, l)
-        #cv2.line(display, (l[0], l[1]), (l[2], l[3]), (255,0,255), 3, cv2.LINE_AA)
+        
+    #Below here I'm just gonna paste a bunch of khang code.  
+    
+    #We analyze territory between our best candidate lines.
+    line1, line2 = veryBest 
+    img_roi = regionBetween(line1, line2, img)
+    
+    
+    #The following chunk of code creates an array "peaks" which idicates which of the points of
+    #line1_discrete are likely to be markings. 
+    line1_discrete = discretize(line1)
+    line2_discrete = discretize(line2)
+    roi_mean = np.mean(img_roi, axis=0)
+    black_bar = np.argmin(roi_mean)
+    length = np.max([img_roi.shape[1] - black_bar, black_bar])
+    if black_bar < img_roi.shape[1] / 2:
+        roi_mean = np.append(roi_mean, 0)
+        peaks, _ = find_peaks(roi_mean[black_bar:], distance=length / NOF_MARKERS * 0.75)
+        peaks = peaks + black_bar
+    else:
+        roi_mean = np.insert(roi_mean, 0, 0)
+        peaks, _ = find_peaks(roi_mean[:black_bar], distance=length / NOF_MARKERS * 0.75)
+        peaks = peaks - 1
+    
+    
+    #finally, display marks on the ruler. 
+    for i, t in enumerate(peaks):
+        cv2.line(display, (line1_discrete[t,0], line1_discrete[t,1]), (line2_discrete[t,0], line2_discrete[t,1]), (0,0,0), 3, cv2.LINE_AA)
+        cv2.line(display, (line1_discrete[t,0], line1_discrete[t,1]), (line2_discrete[t,0], line2_discrete[t,1]), (255,255,255), 1, cv2.LINE_AA)
+        #below puts the marks on a cropped image of the ruler, if ya want
+        #cv2.circle(img_roi, center = (t,10), radius = 2, color = (255,0,255), thickness = 3 )
+    
     
     return display
 
     #What else should be done:
-    #run a few iterations of morph dilate
-    #take the space between two matching lines.
-    #a true ruler will have little noise between. Calc something like 100 random points inbetween the lines.
-    #If the number of edge pieces is below some threshhold, we can deduce that it is legit. 
+    #additional things to guarrantee that the region holds a ruler. maybe check if the markings are
+    #have a common spacing. if no common spacing probably bad.
+    #also we can do the probabilty thing but other stuff seems more fun atm.
 
 while True:
 
@@ -249,8 +278,8 @@ for i in range(0,12):
     cv2.destroyAllWindows()
     
     
-img = cv2.imread('numLine.jpeg')
-cv2.imshow("window", process(img))
+
+cv2.imshow("window", process(pic))
 cv2.waitKey()
 for i in range(0,12):
     cv2.destroyAllWindows()
