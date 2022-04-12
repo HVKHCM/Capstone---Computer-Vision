@@ -94,12 +94,33 @@ def regionBetween(line1, line2, img):
     return img_roi
 
 def normalizeGaps(peaks):
+    #create array to store the gaps between marks
     gaps = np.subtract(peaks[1:], peaks[:-1])
     med = np.median(gaps)
-    mean = np.mean(gaps)
-    print(gaps)
-    print(med)
-    print(mean)
+    radius = med//10
+    
+    #create new array containing only the gaps with size close to the median
+    normalGaps = gaps[abs(gaps - med) <= radius]
+
+    newgaps = []
+    for i, gapSize in enumerate(gaps):
+        #if a gap is pretty close to a multiple of the average gap length, 
+        #slice that fella up
+        added = False
+        for j in range(1,10):
+            if abs(gapSize - j * med) < j*radius:
+                for k in range(0, j):
+                    newgaps.append(gapSize/j)
+                added = True
+                break
+        if not added:
+            newgaps.append(gapSize)
+    newpeaks = [peaks[0]]
+    for i, gapSize in enumerate(newgaps):
+        newpeaks.append(newpeaks[i] + gapSize)
+    newpeaks = np.array(newpeaks)  
+    return newpeaks.astype(int)
+    
 
 def lineLen(line):
     return np.sqrt((line[0]-line[2])**2 + (line[1]-line[3])**2)
@@ -137,9 +158,22 @@ def parallelism(a,b):
 
 pic = cv2.imread("numLine.jpeg")
 pic = cv2.resize(pic,(0,0), fx =  1.2, fy = 1.2)
+
+
+testPeaks = [86,  221,  287,  428,  498,  566,  634,  705,  774,  843,  910,  976, 1113, 1180,
+ 1249, 1317, 1389, 1459, 1678]
+
+print(normalizeGaps(testPeaks))
+#quit()
+
 # Create a VideoCapture object and read from input file
 # If the input is the camera, pass 0 instead of the video file name
-cap = cv2.VideoCapture('numLineData/IMG_1706.MOV')
+
+# 1708 is the zoomed in one
+# 1709 has a hand and the full ruler
+# 1710 has random stuff in the way, includes distracting keyboard
+
+cap = cv2.VideoCapture('numLineData/IMG_1708.MOV')
 # Check if camera opened successfully
 if (cap.isOpened()):
     ret, img = cap.read()
@@ -149,13 +183,14 @@ if (cap.isOpened()):
 display = img.copy()
 
 def process(img):
-    #KNOWN BUGS: rulerRegion sometimes tries to access pixels which are out of range. 
+    #KNOWN BUGS: sometimes tries to access pixels which are out of range. 
+    # I've seen this happen during the display phase, involving line_discrete
     
     #First, repeat canny alg until there are about [candidates] or so candidate lines. 
     width = img.shape[1]
     maxVal = 1000
     minVal = 700
-    NOF_MARKERS = 100
+    
     candidates = 10
     while True:
         edges = cv2.Canny(img, minVal, maxVal)
@@ -223,30 +258,40 @@ def process(img):
     line1, line2 = veryBest 
     img_roi = regionBetween(line1, line2, img)
     
+    #perhaps make this a dynamic thresholding image. 
+    #_ , img_roi = cv2.threshold(img_roi,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+    
     
     #The following chunk of code creates an array "peaks" which idicates which of the points of
     #line1_discrete are likely to be markings. 
+    
+    NOF_MARKERS = 100
     line1_discrete = discretize(line1)
     line2_discrete = discretize(line2)
+    
+    #this is a mean of the color of each column of the cropped image. a column containing a white mark will have a high value.
     roi_mean = np.mean(img_roi, axis=0)
-    black_bar = np.argmin(roi_mean)
-    length = np.max([img_roi.shape[1] - black_bar, black_bar])
-    if black_bar < img_roi.shape[1] / 2:
-        roi_mean = np.append(roi_mean, 0)
-        peaks, _ = find_peaks(roi_mean[black_bar:], distance=length / NOF_MARKERS * 0.75)
-        peaks = peaks + black_bar
-    else:
-        roi_mean = np.insert(roi_mean, 0, 0)
-        peaks, _ = find_peaks(roi_mean[:black_bar], distance=length / NOF_MARKERS * 0.75)
-        peaks = peaks - 1
     
-    normalizeGaps(peaks)
+    avg_ruler_color = np.mean(roi_mean)
+    length = img_roi.shape[1]
     
+    prom = 10
+    peaks = []
+    while len(peaks) < 10 and prom >1:
+        peaks, _ = find_peaks(roi_mean,prominence = prom, distance=length / NOF_MARKERS * 0.75)
+        prom = 0.8 * prom
     
+    #uncomment below for demo
+    #BetterPeaks = normalizeGaps(peaks)
+    
+    for i, peak in enumerate(BetterPeaks):
+        cv2.line(display, (line1_discrete[peak,0], line1_discrete[peak,1]), (line2_discrete[peak,0], line2_discrete[peak,1]), (0,0,0), 3, cv2.LINE_AA)
+        cv2.line(display, (line1_discrete[peak,0], line1_discrete[peak,1]), (line2_discrete[peak,0], line2_discrete[peak,1]), (255,0,0), 1, cv2.LINE_AA)
+
     #finally, display marks on the ruler. 
-    for i, t in enumerate(peaks):
-        cv2.line(display, (line1_discrete[t,0], line1_discrete[t,1]), (line2_discrete[t,0], line2_discrete[t,1]), (0,0,0), 3, cv2.LINE_AA)
-        cv2.line(display, (line1_discrete[t,0], line1_discrete[t,1]), (line2_discrete[t,0], line2_discrete[t,1]), (255,255,255), 1, cv2.LINE_AA)
+    for i, peak in enumerate(peaks):
+        cv2.line(display, (line1_discrete[peak,0], line1_discrete[peak,1]), (line2_discrete[peak,0], line2_discrete[peak,1]), (0,0,0), 3, cv2.LINE_AA)
+        cv2.line(display, (line1_discrete[peak,0], line1_discrete[peak,1]), (line2_discrete[peak,0], line2_discrete[peak,1]), (255,255,255), 1, cv2.LINE_AA)
         #below puts the marks on a cropped image of the ruler, if ya want
         #cv2.circle(img_roi, center = (t,10), radius = 2, color = (255,0,255), thickness = 3 )
     
