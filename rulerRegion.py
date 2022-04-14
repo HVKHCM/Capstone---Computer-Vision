@@ -247,18 +247,35 @@ def process(img):
     
     avg_ruler_color = np.mean(roi_mean)
     length = img_roi.shape[1]
+    width = img_roi.shape[0]   
+    
+    
+    #used when checking gap size between peaks. Perhaps we expect 20 pixels etwen marks, but we will allow peak checking
+    #as soon as 15 pixels.
+    ERROR_MARGIN = 0.75
+    
+    #a constant for the ratio of width to height on the standard numberline
+    WIDTH_TO_HEIGHT = 1/75
+    
+    
+    expected_portion_of_numline = min(1,  WIDTH_TO_HEIGHT * length /width)
+    #add a multipliction by 2 when dealing with 2-wide numberlines
+    expected_marks = NOF_MARKERS * expected_portion_of_numline
+    d = length/expected_marks
+    print(expected_marks)
+    
     
     prom = 10
     peaks = []
-    while len(peaks) < 10 and prom >1:
-        peaks, _ = find_peaks(roi_mean,prominence = prom, distance=length / NOF_MARKERS * 0.75)
+    while len(peaks) < 0.7* expected_marks and prom >1:
+        peaks, _ = find_peaks(roi_mean,prominence = prom, distance=d * ERROR_MARGIN)
         prom = 0.8 * prom
     
     
     betterPeaks = []
     
     #uncomment below for demo
-    #frame 70 is a good example to test on
+    #frame 82 is a good example to test on
     #betterPeaks = normalizeGaps(peaks)
     
     for i, peak in enumerate(betterPeaks):
