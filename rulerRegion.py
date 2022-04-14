@@ -156,32 +156,6 @@ def parallelism(a,b):
     prod = abs(np.dot(va,vb))
     return prod/lineLen(a)/lineLen(b) 
 
-pic = cv2.imread("numLine.jpeg")
-pic = cv2.resize(pic,(0,0), fx =  1.2, fy = 1.2)
-
-
-testPeaks = [86,  221,  287,  428,  498,  566,  634,  705,  774,  843,  910,  976, 1113, 1180,
- 1249, 1317, 1389, 1459, 1678]
-
-print(normalizeGaps(testPeaks))
-#quit()
-
-# Create a VideoCapture object and read from input file
-# If the input is the camera, pass 0 instead of the video file name
-
-# 1708 is the zoomed in one
-# 1709 has a hand and the full ruler
-# 1710 has random stuff in the way, includes distracting keyboard
-
-cap = cv2.VideoCapture('numLineData/IMG_1708.MOV')
-# Check if camera opened successfully
-if (cap.isOpened()):
-    ret, img = cap.read()
-    if not ret:
-        quit()
-
-display = img.copy()
-
 def process(img):
     #KNOWN BUGS: sometimes tries to access pixels which are out of range. 
     # I've seen this happen during the display phase, involving line_discrete
@@ -251,7 +225,6 @@ def process(img):
     veryBest = align(veryBest[0], veryBest[1])
     for l in veryBest:
         cv2.line(display, (l[0], l[1]), (l[2], l[3]), (0,255,0), 3, cv2.LINE_AA)
-        
     #Below here I'm just gonna paste a bunch of khang code.  
     
     #We analyze territory between our best candidate lines.
@@ -281,10 +254,14 @@ def process(img):
         peaks, _ = find_peaks(roi_mean,prominence = prom, distance=length / NOF_MARKERS * 0.75)
         prom = 0.8 * prom
     
-    #uncomment below for demo
-    #BetterPeaks = normalizeGaps(peaks)
     
-    for i, peak in enumerate(BetterPeaks):
+    betterPeaks = []
+    
+    #uncomment below for demo
+    #frame 70 is a good example to test on
+    #betterPeaks = normalizeGaps(peaks)
+    
+    for i, peak in enumerate(betterPeaks):
         cv2.line(display, (line1_discrete[peak,0], line1_discrete[peak,1]), (line2_discrete[peak,0], line2_discrete[peak,1]), (0,0,0), 3, cv2.LINE_AA)
         cv2.line(display, (line1_discrete[peak,0], line1_discrete[peak,1]), (line2_discrete[peak,0], line2_discrete[peak,1]), (255,0,0), 1, cv2.LINE_AA)
 
@@ -303,6 +280,37 @@ def process(img):
     #have a common spacing. if no common spacing probably bad.
     #also we can do the probabilty thing but other stuff seems more fun atm.
 
+
+
+
+pic = cv2.imread("numLine.jpeg")
+pic = cv2.resize(pic,(0,0), fx =  1.2, fy = 1.2)
+
+
+testPeaks = [86,  221,  287,  428,  498,  566,  634,  705,  774,  843,  910,  976, 1113, 1180,
+ 1249, 1317, 1389, 1459, 1678]
+
+#print(normalizeGaps(testPeaks))
+#quit()
+
+# Create a VideoCapture object and read from input file
+# If the input is the camera, pass 0 instead of the video file name
+
+# 1708 is the zoomed in one
+# 1709 has a hand and the full ruler
+# 1710 has random stuff in the way, includes distracting keyboard
+
+cap = cv2.VideoCapture('numLineData/IMG_1708.MOV')
+# Check if camera opened successfully
+
+if (cap.isOpened()):
+    ret, img = cap.read()
+    if not ret:
+        quit()
+    frame = 1
+display = img.copy()
+
+
 while True:
 
 
@@ -314,11 +322,12 @@ while True:
     elif ch & 0xFF == ord('d'):
         if (cap.isOpened()):
             ret, img = cap.read()
+            frame +=1
             if not ret:
                 break
         else: 
             break
-        display = img
+        display = cv2.putText(img, f"{frame}", (0,40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv2.LINE_AA)
     elif ch & 0xFF == ord('p'):
         display = process(img)
     elif ch & 0xFF == ord('c'):
