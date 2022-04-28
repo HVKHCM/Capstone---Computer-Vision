@@ -1,4 +1,5 @@
 from lineGeom import * 
+import random
 
 def extend(l,img):
     #This function takes a segment and stretches it to the edge of the screen.
@@ -202,17 +203,103 @@ def rulerMarks(line1, line2, img):
         markCoordinates.append(line1_discrete[peak,:])
     return markCoordinates
 
+def findTriangle(line1, line2, img):
+    crop = regionBetween(line1, line2, img)
+    hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+    
+    #how many neighboring hues we allow
+    radius = 25
+    
+    #The specific hue of the green triangle
+    hue = 47
+    
+    #create binary array of pixels within range, then erode once. The triangle should be solid enough that erode
+    #doesn't mess with it too much. 
+    low_green = np.array([hue-radius, 20,20])
+    up_green = np.array([hue + radius,255,255])
+    mask = cv2.inRange(hsv, low_green, up_green)
+    height, width = mask.shape
+    kernel = np.ones((5,5),np.uint8)
+    mask = cv2.erode(mask, kernel, iterations = 1)
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    
+    display = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+    
+    triangles = []
+    biggestArc = 0
+    for cnt in contours:
+        size = cv2.arcLength(cnt,True)
+        if  size > biggestArc:
+            biggestArc = size
+            
+    epsilon = 0.1* biggestArc
+    for i, cnt in enumerate(contours):
+        contours[i] = cv2.approxPolyDP(cnt, epsilon, True)
+        if len(contours[i]) ==3:
+            triangles.append(contours[i])   
+    
+    #With that, we have a list of contours who are basically triangles. Now I want to run through them
+    # and decide which, if any, is the one we're looking for. 
+    likely = np.zeros(len(triangles))
+    
+    #the triangle is probably about yay big
+    idealArea = height**2 //2
+    
+    for i, tri in enumerate(triangles):
+        perim = cv2.arcLength(tri, True)
+        
+        #if the perimeter of the triangle is smaller than half the height of the image,
+        #that's probably not the right triangle
+        if perim < height//2 or perim > 6* height:
+            continue
+        area = int(cv2.contourArea(tri))
+        if area == idealArea:
+            likely[i] =1
+            continue
+        likely[i] = 1/(abs(idealArea-area))
+    
+    champ = likely.argmax()
+    if likely[champ] == 0:
+        return -1
+    
+    M = cv2.moments(triangles[champ])
+    relCenter = (int(M['m10']/M['m00']), int(M['m01']/M['m00']) )
+    
+    line1disc = discretize(line1)
+    line2disc = discretize(line2)
+    
+    slice = (line1disc[relCenter[0]][0], line1disc[relCenter[0]][1], line2disc[relCenter[0]][0], line2disc[relCenter[0]][1])
+    
+    trueCenter = midPoint( slice  )
+    
+    
+    
+    return trueCenter
+
+
+
 
 if __name__ == "__main__":
     cap = cv2.VideoCapture('numLineData/IMG_1760.MOV')
-    ret, img = cap.read()
     
+    frame = random.randint(1,4)
+    for i in range(0,frame):
+        cap.read()
+        
+    ret, img = cap.read()
+
     l1,l2 = rulerLines(img)
     marks  = rulerMarks(l1,l2, img)
     
     for (x,y) in marks:
         cv2.circle(img, center = (x,y), radius = 2, color = (255,0,255), thickness = 10 )
     
-    cv2.imshow("therer", img)
+    l1 = extend(l1,img)
+    l2 = extend(l2,img)
+ 
+    #cv2.imshow("other", img)
+    img =findTriangle(l1,l2,img)
+    cv2.imshow("therer", img )
+    
     cv2.waitKey()
     cv2.destroyAllWindows()

@@ -19,10 +19,10 @@ def lineLen(line):
 
 def midPoint(l):
     #returns the midpoint of a segment
-    return [(l[0]+l[2])/2, (l[1]+l[3])/2]
+    return [(l[0]+l[2])//2, (l[1]+l[3])//2]
 
 def mb(l):
-    #gives slope (m) and y intercept (b)
+    #gives slope (m) and y intercept 
     return ((l[1]-l[3])/(l[0]-l[2]), -l[0]* (l[1]-l[3])/(l[0]-l[2]) + l[1]) 
 
 def ab(l):
