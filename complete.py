@@ -305,7 +305,7 @@ def process(img):
     #have a common spacing. if no common spacing probably bad.
     #also we can do the probabilty thing but other stuff seems more fun atm.
 
-pic = cv2.imread('example5.jpg',1)
+pic = cv2.imread('exampleNumberLine.jpeg',1)
 
 
 # returning the marking location
