@@ -109,4 +109,27 @@ def align(line1, line2):
         end2 = temp            
     
     return [start1[0], start1[1], end1[0], end1[1]] , [start2[0], start2[1], end2[0], end2[1]]
+
+def stretch(line, point):
+    #takes line segment [x1,y1,x2,y2] and stretches it to where point is. 
+    
+    m,b = mb(line)
+    if m == 0:
+        m = 0.0000001
+    x = (point[0]/m + point[1] - b)/(m+1/m)
+    y = m * x + b
+    
+    x = int(x)
+    y = int(y)
+    
+    p = (x,y)
+    
+    if blockDist(p, (line[0],line[1])) + blockDist(p, (line[2],line[3])) <= blockDist((line[0],line[1]), (line[2],line[3])) + 1:
+        return line
+    
+    if  blockDist(p, (line[0],line[1])) < blockDist(p, (line[2],line[3])):
+        return [x,y,line[2], line[3]]
+    return [line[0], line[1], x,y]
+
+
     

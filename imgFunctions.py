@@ -226,17 +226,14 @@ def findTriangle(line1, line2, img):
     display = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
     
     triangles = []
-    biggestArc = 0
-    for cnt in contours:
-        size = cv2.arcLength(cnt,True)
-        if  size > biggestArc:
-            biggestArc = size
-            
-    epsilon = 0.1* biggestArc
     for i, cnt in enumerate(contours):
+        epsilon = 0.1 * cv2.arcLength(cnt,True)
         contours[i] = cv2.approxPolyDP(cnt, epsilon, True)
         if len(contours[i]) ==3:
             triangles.append(contours[i])   
+    if len(triangles) == 0:
+        return -1
+    
     
     #With that, we have a list of contours who are basically triangles. Now I want to run through them
     # and decide which, if any, is the one we're looking for. 
@@ -257,7 +254,6 @@ def findTriangle(line1, line2, img):
             likely[i] =1
             continue
         likely[i] = 1/(abs(idealArea-area))
-    
     champ = likely.argmax()
     if likely[champ] == 0:
         return -1
@@ -274,7 +270,7 @@ def findTriangle(line1, line2, img):
     
     
     
-    return trueCenter
+    return (trueCenter[0],trueCenter[1])
 
 
 
@@ -282,23 +278,31 @@ def findTriangle(line1, line2, img):
 if __name__ == "__main__":
     cap = cv2.VideoCapture('numLineData/IMG_1760.MOV')
     
-    frame = random.randint(1,4)
+    
+    frame = 75
     for i in range(0,frame):
         cap.read()
         
     ret, img = cap.read()
 
     l1,l2 = rulerLines(img)
+   
+    l1E = extend(l1,img)
+    l2E = extend(l2,img)
+ 
+    #cv2.imshow("other", img)
+    spot = findTriangle(l1E,l2E,img)
+    if spot == -1:
+        spot = (0,0)
+    cv2.circle(img, center = spot, radius = 2, color = (255,0,255), thickness = 10 )
+    
+    l1 = stretch(l1, spot)
+    l2 = stretch(l2, spot)
     marks  = rulerMarks(l1,l2, img)
     
     for (x,y) in marks:
-        cv2.circle(img, center = (x,y), radius = 2, color = (255,0,255), thickness = 10 )
+        cv2.circle(img, center = (x,y), radius = 2, color = (255,0,0), thickness = 10 )
     
-    l1 = extend(l1,img)
-    l2 = extend(l2,img)
- 
-    #cv2.imshow("other", img)
-    img =findTriangle(l1,l2,img)
     cv2.imshow("therer", img )
     
     cv2.waitKey()
