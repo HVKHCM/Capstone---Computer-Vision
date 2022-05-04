@@ -1,5 +1,11 @@
 from lineGeom import * 
 import random
+import scipy.spatial
+from scipy.signal import find_peaks
+from skimage.draw import line
+import math
+import mediapipe as mp
+
 
 def extend(l,img):
     #This function takes a segment and stretches it to the edge of the screen.
@@ -272,7 +278,21 @@ def findTriangle(line1, line2, img):
     
     return (trueCenter[0],trueCenter[1])
 
-
+def fingertip_coordinate(pic):
+    with mp_hands.Hands(static_image_mode=True, model_complexity=1, min_detection_confidence=0.1, min_tracking_confidence=0.3, max_num_hands=1) as hands:
+    #image = cv2.flip(pic, 1)
+    image = pic
+    result = hands.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    image_height, image_width, _ = image.shape
+    copied_image = image.copy()
+    print('Handedness:', result.multi_handedness)
+    for hand_landmarks in result.multi_hand_landmarks:
+        finger_tip_coordinate_orig = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+        finger_tip_coordinate = mp_drawing._normalized_to_pixel_coordinates(finger_tip_coordinate_orig.x,
+                                                                                      finger_tip_coordinate_orig.y,
+                                                                                      image_width,
+                                                                                      image_height)
+    return finger_tip_coordinate
 
 
 if __name__ == "__main__":
