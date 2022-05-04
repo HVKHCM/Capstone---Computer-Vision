@@ -276,34 +276,42 @@ def findTriangle(line1, line2, img):
 
 
 if __name__ == "__main__":
-    cap = cv2.VideoCapture('numLineData/IMG_1760.MOV')
+    cap = cv2.VideoCapture('numLineData/IMG_1773.MOV')
     
     
-    frame = 75
+    frame = 1
     for i in range(0,frame):
         cap.read()
         
     ret, img = cap.read()
 
+
+    #extract expected ruler lines
     l1,l2 = rulerLines(img)
    
+    #extend lines to edges of screen
     l1E = extend(l1,img)
     l2E = extend(l2,img)
- 
-    #cv2.imshow("other", img)
+
+    #Use extended lines to look for the triangle
     spot = findTriangle(l1E,l2E,img)
     if spot == -1:
         spot = (0,0)
-    cv2.circle(img, center = spot, radius = 2, color = (255,0,255), thickness = 10 )
+    cv2.circle(img, center = spot, radius = 30, color = (0,0,255), thickness = 8 )
+    cv2.circle(img, center = spot, radius = 2, color = (0,0,0), thickness = 14 )
+    cv2.circle(img, center = spot, radius = 2, color = (255,255,255), thickness = 8 )
     
+    #Stretch original lines to triangle location, then run mark detection
     l1 = stretch(l1, spot)
     l2 = stretch(l2, spot)
     marks  = rulerMarks(l1,l2, img)
     
     for (x,y) in marks:
-        cv2.circle(img, center = (x,y), radius = 2, color = (255,0,0), thickness = 10 )
+        cv2.circle(img, center = (x,y), radius = 2, color = (0,0,0), thickness = 14 )
+        cv2.circle(img, center = (x,y), radius = 2, color = (255,255,255), thickness = 8 )
+        
     
-    cv2.imshow("therer", img )
+    cv2.imshow("MARKED UP", img )
     
     cv2.waitKey()
     cv2.destroyAllWindows()
