@@ -42,7 +42,7 @@ def extend(l,img):
     p1 = final[0]
     p2 = final[1]
     
-    if blockDist(p1, (l1[0],l1[1])) > blockDist(p1, (l1[2],l1[3])):
+    if blockDist(p1, (l[0],l[1])) > blockDist(p1, (l[2],l[3])):
         temp = p2
         p2 = p1
         p1 = temp     
@@ -280,19 +280,19 @@ def findTriangle(line1, line2, img):
 
 def fingertip_coordinate(pic):
     with mp_hands.Hands(static_image_mode=True, model_complexity=1, min_detection_confidence=0.1, min_tracking_confidence=0.3, max_num_hands=1) as hands:
-    #image = cv2.flip(pic, 1)
-    image = pic
-    result = hands.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    image_height, image_width, _ = image.shape
-    copied_image = image.copy()
-    print('Handedness:', result.multi_handedness)
-    for hand_landmarks in result.multi_hand_landmarks:
-        finger_tip_coordinate_orig = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-        finger_tip_coordinate = mp_drawing._normalized_to_pixel_coordinates(finger_tip_coordinate_orig.x,
-                                                                                      finger_tip_coordinate_orig.y,
-                                                                                      image_width,
-                                                                                      image_height)
-    return finger_tip_coordinate
+        #image = cv2.flip(pic, 1)
+        image = pic
+        result = hands.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        image_height, image_width, _ = image.shape
+        copied_image = image.copy()
+        print('Handedness:', result.multi_handedness)
+        for hand_landmarks in result.multi_hand_landmarks:
+            finger_tip_coordinate_orig = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+            finger_tip_coordinate = mp_drawing._normalized_to_pixel_coordinates(finger_tip_coordinate_orig.x,
+                                                                                        finger_tip_coordinate_orig.y,
+                                                                                        image_width,
+                                                                                        image_height)
+        return finger_tip_coordinate
 
 
 if __name__ == "__main__":
