@@ -4,7 +4,7 @@ import scipy.spatial
 from scipy.signal import find_peaks
 from skimage.draw import line
 import math
-import mediapipe as mp
+#import mediapipe as mp
 
 
 def extend(l,img):
@@ -154,8 +154,7 @@ def rulerLines(img):
         for j, line2 in enumerate(lines[i+1:]):
             init = parallelism(line1, line2)
             if init > 0.999:
-                #d = distApart(line1, line2)
-                d = pointDist(midPoint(line1), line2)
+                d = distApart(line1, line2)
                 init += min(d/40, 1, 6 - d/50)
             #Likeliness value first checks if two lines are basically parallel, then if they are, 
             #additional points are added if they are a fair distance away, but not too far.

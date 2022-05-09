@@ -30,18 +30,13 @@ def ab(l):
     x1,y1,x2,y2 = l
     return (-(y1-y2)/(x2*y1-x1*y2), -(x2-x1)/(x2*y1-x1*y2))
 
-def pointDist(p, l):
-    #gives normal distance between a point p and line l.
-    a, b = ab(l)
-    x1, y1 = p
-    
-    return abs(a*x1 + b*y1 + 1)/np.sqrt(a**2+b**2)
     
 def distApart(a,b):
-    #only to be used on basically parallel lines
-    b1 = mb(b)[1]
-    m, b2 = mb(a)
-    return abs(b2-b1)/np.sqrt(m**2 +1)
+    line1, line2 = align(a,b)
+    dx = int(0.5 * (line2[0] - line1[0]) + 0.5 * (line2[2] - line1[2]))
+    dy = int(0.5 * (line2[1] - line1[1]) + 0.5 * (line2[3] - line1[3]))
+
+    return len(list(zip(*line(*(0, 0), *(dx, dy)))))
 
 def parallelism(a,b):
     va = [a[0]-a[2], a[1]-a[3]]
