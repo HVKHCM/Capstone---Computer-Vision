@@ -136,7 +136,7 @@ def rulerLines(img):
     while True:
         edges = cv2.Canny(blur, minVal, maxVal)
         edges = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, (5, 5), iterations=1)
-        lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 50, None, width//3, width//30)
+        lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 50, None, width//5, width//50)
         if lines is not None and len(lines)>candidates :
             break
         minVal *= 0.9
