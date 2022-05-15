@@ -13,6 +13,8 @@ def blockDist(p1,p2):
     #simple distance metric
     return abs(p1[0]-p2[0]) + abs(p1[1] - p2[1])
 
+
+
 def lineLen(line):
     #simple euclidean distance
     return np.sqrt((line[0]-line[2])**2 + (line[1]-line[3])**2)

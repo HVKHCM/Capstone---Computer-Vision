@@ -24,7 +24,16 @@ def process(img):
     for (x,y) in marks:
         cv2.circle(display, center = (x,y), radius = 2, color = (0,0,0), thickness = 14 )
         cv2.circle(display, center = (x,y), radius = 2, color = (255,255,255), thickness = 8 )
-
+    
+    fingertip = fingertip_coordinate(img)
+    cv2.circle(display, center = fingertip, radius = 2, color = (0,0,0), thickness = 14 )
+    dist = []
+    for mark in marks:
+        dist.append(lineLen((fingertip[0], fingertip[1], mark[0],mark[1])))
+    closest = np.array(dist).argmin()
+    print(closest + 2)
+    cv2.circle(display, center = marks[closest], radius = 5, color = (255,0,255), thickness = 8 )
+    display = cv2.putText(display, f"{closest +2}", marks[closest], cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv2.LINE_AA)
     return display
 
 
