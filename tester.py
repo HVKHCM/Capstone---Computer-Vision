@@ -22,7 +22,7 @@ def process(img):
     marks  = rulerMarks(l1,l2, img)
     if spot != -1:
         if blockDist(marks[0], spot) > blockDist(marks[1], spot):
-            marks = marks.reverse()
+            marks.reverse()
 
 
 
