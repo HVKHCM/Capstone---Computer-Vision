@@ -20,7 +20,13 @@ def process(img):
         l1 = stretch(l1, spot)
         l2 = stretch(l2, spot)
     marks  = rulerMarks(l1,l2, img)
-    
+    if spot != -1:
+        if blockDist(marks[0], spot) > blockDist(marks[1], spot):
+            marks = marks.reverse()
+
+
+
+
     for (x,y) in marks:
         cv2.circle(display, center = (x,y), radius = 2, color = (0,0,0), thickness = 14 )
         cv2.circle(display, center = (x,y), radius = 2, color = (255,255,255), thickness = 8 )
