@@ -3,7 +3,7 @@ from imgFunctions import *
 def process(img):
     #extract expected ruler lines
     l1,l2 = rulerLines(img)
-   
+    
     #extend lines to edges of screen
     l1E = extend(l1,img)
     l2E = extend(l2,img)
@@ -12,6 +12,7 @@ def process(img):
 
     #Use extended lines to look for the triangle
     spot = findTriangle(l1E,l2E,img)
+    
     if spot != -1:
         cv2.circle(display, center = spot, radius = 30, color = (0,0,255), thickness = 8 )
         cv2.circle(display, center = spot, radius = 2, color = (0,0,0), thickness = 14 )
@@ -30,7 +31,7 @@ def process(img):
     for (x,y) in marks:
         cv2.circle(display, center = (x,y), radius = 2, color = (0,0,0), thickness = 14 )
         cv2.circle(display, center = (x,y), radius = 2, color = (255,255,255), thickness = 8 )
-    
+    return display
     fingertip = fingertip_coordinate(img)
     cv2.circle(display, center = fingertip, radius = 2, color = (0,0,0), thickness = 14 )
     dist = []
@@ -51,7 +52,8 @@ if __name__ == "__main__":
     # 1709 has a hand and the full ruler
     # 1710 has random stuff in the way, includes distracting keyboard
     #60, 73, 74
-    cap = cv2.VideoCapture('numLineData/IMG_1773.MOV')
+    cap = cv2.VideoCapture('numLineData/IMG_1774.MOV')
+    #cap = cv2.VideoCapture('results.mov')
     # Check if camera opened successfully
 
     if (cap.isOpened()):
@@ -79,6 +81,8 @@ if __name__ == "__main__":
             else: 
                 break
             display = cv2.putText(img, f"{frame}", (0,40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv2.LINE_AA)
+        elif ch & 0xFF == ord('p'):
+            display = process(img)
         elif ch & 0xFF == ord('p'):
             display = process(img)
 
