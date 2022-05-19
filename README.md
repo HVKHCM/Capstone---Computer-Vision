@@ -23,7 +23,7 @@ Within **tester.py** is a function called **process(img)**. This is where we put
 #### lineGeom.py
 This houses many small functions which we use for line and point manipulation. 
 #### imgFunction.py
-The bluk of our algorithm lives in this file. Specifically, we highlight the functionality of certain important algorithms.
+The bulk of our algorithm lives in this file. Specifically, we highlight the functionality of certain important algorithms.
 ##### rulerLines(img)
 This function takes in an image which features a number line and returns a pair of bounding lines. 
 ##### rulerMarks(line1, line2, img)
